@@ -41,6 +41,7 @@ set(CORE_CONSTRUCTS
   "test:CotTest:TEST"
   "enums:CotEnums:ENUMS"
   "unions:CotUnions:UNIONS"
+  "generics:CotGenerics:GENERICS"
 )
 
 foreach(entry ${CORE_CONSTRUCTS})

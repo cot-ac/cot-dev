@@ -49,6 +49,10 @@
 #ifdef COT_HAS_TEST
 #include "test/Ops.h"
 #endif
+#ifdef COT_HAS_GENERICS
+#include "generics/Types.h"
+#include "generics/Ops.h"
+#endif
 
 #include "mlir/CAPI/IR.h"
 #include "mlir/IR/Builders.h"
@@ -233,6 +237,9 @@ void _cot_anchor_EnumsConstruct(void);
 #ifdef COT_HAS_UNIONS
 void _cot_anchor_UnionsConstruct(void);
 #endif
+#ifdef COT_HAS_GENERICS
+void _cot_anchor_GenericsConstruct(void);
+#endif
 } // extern "C"
 
 void cirForceConstructLink() {
@@ -270,6 +277,9 @@ void cirForceConstructLink() {
 #endif
 #ifdef COT_HAS_UNIONS
   _cot_anchor_UnionsConstruct();
+#endif
+#ifdef COT_HAS_GENERICS
+  _cot_anchor_GenericsConstruct();
 #endif
 }
 
@@ -1103,6 +1113,75 @@ MlirOperation cirBuildTestCase(MlirBlock block, MlirLocation loc,
 }
 
 #endif // COT_HAS_TEST
+
+//===----------------------------------------------------------------------===//
+// cot-generics: Types and Ops
+//===----------------------------------------------------------------------===//
+
+#ifdef COT_HAS_GENERICS
+
+MlirType cirTypeParamTypeGet(MlirContext ctx, const char *name) {
+  return wrap(cir::TypeParamType::get(unwrap(ctx), name));
+}
+
+MlirStringRef cirTypeParamTypeGetName(MlirType typeParamType) {
+  auto tp = mlir::cast<cir::TypeParamType>(unwrap(typeParamType));
+  auto name = tp.getName();
+  return {name.data(), name.size()};
+}
+
+MlirValue cirBuildGenericApply(MlirBlock block, MlirLocation loc,
+                               const char *callee,
+                               intptr_t numArgs, const MlirValue *args,
+                               intptr_t numSubs,
+                               const char *const *subsKeys,
+                               const MlirType *subsTypes,
+                               intptr_t numResults,
+                               const MlirType *resultTypes) {
+  auto builder = getBuilderAtEnd(block);
+  auto location = unwrap(loc);
+  auto ctx = builder.getContext();
+
+  SmallVector<Value> argVals;
+  for (intptr_t i = 0; i < numArgs; ++i)
+    argVals.push_back(unwrap(args[i]));
+
+  SmallVector<Attribute> keys, types;
+  for (intptr_t i = 0; i < numSubs; ++i) {
+    keys.push_back(StringAttr::get(ctx, subsKeys[i]));
+    types.push_back(TypeAttr::get(unwrap(subsTypes[i])));
+  }
+
+  SmallVector<Type> resTys;
+  for (intptr_t i = 0; i < numResults; ++i)
+    resTys.push_back(unwrap(resultTypes[i]));
+
+  auto calleeAttr = FlatSymbolRefAttr::get(ctx, callee);
+  auto op = builder.create<cir::GenericApplyOp>(
+      location, resTys, calleeAttr, argVals,
+      ArrayAttr::get(ctx, keys), ArrayAttr::get(ctx, types));
+  if (numResults > 0)
+    return wrap(op.getResult(0));
+  return {nullptr};
+}
+
+bool cirTypeIsTypeParam(MlirType type) {
+  return mlir::isa<cir::TypeParamType>(unwrap(type));
+}
+
+#else
+
+MlirType cirTypeParamTypeGet(MlirContext, const char *) { return {nullptr}; }
+MlirStringRef cirTypeParamTypeGetName(MlirType) { return {nullptr, 0}; }
+MlirValue cirBuildGenericApply(MlirBlock, MlirLocation, const char *,
+                               intptr_t, const MlirValue *, intptr_t,
+                               const char *const *, const MlirType *,
+                               intptr_t, const MlirType *) {
+  return {nullptr};
+}
+bool cirTypeIsTypeParam(MlirType) { return false; }
+
+#endif // COT_HAS_GENERICS
 
 //===----------------------------------------------------------------------===//
 // Type inspectors

@@ -89,6 +89,13 @@ if(COT_HAS_UNIONS)
     MLIRInferTypeOpInterface MLIRSideEffectInterfaces)
 endif()
 
+link_core_construct(generics CotGenerics GENERICS)
+if(COT_HAS_GENERICS)
+  target_compile_definitions(cir-opt PRIVATE COT_HAS_GENERICS)
+  target_link_libraries(cir-opt PRIVATE
+    MLIRFuncDialect MLIRPass MLIRInferTypeOpInterface MLIRSideEffectInterfaces)
+endif()
+
 link_core_construct(test CotTest TEST)
 if(COT_HAS_TEST)
   target_link_libraries(cir-opt PRIVATE

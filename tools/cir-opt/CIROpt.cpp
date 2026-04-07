@@ -8,6 +8,10 @@
 #include "cot/Construct/Construct.h"
 #include "cot/Pipeline/Passes.h"
 
+#ifdef COT_HAS_GENERICS
+#include "generics/GenericSpecializer.h"
+#endif
+
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -28,6 +32,11 @@ int main(int argc, char **argv) {
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return cot::createCIRToLLVMPass();
   });
+#ifdef COT_HAS_GENERICS
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    return cot::createGenericSpecializerPass();
+  });
+#endif
 
   // Register construct ops/types from all linked constructs.
   // Constructs are linked via COT_REGISTER_CONSTRUCT static ctors.

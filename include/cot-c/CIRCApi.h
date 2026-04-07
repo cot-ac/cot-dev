@@ -505,10 +505,37 @@ MlirOperation cirBuildTestCase(MlirBlock block, MlirLocation loc,
                                const char *name);
 
 //===----------------------------------------------------------------------===//
+// cot-generics: Types
+//===----------------------------------------------------------------------===//
+
+/// Create a type parameter type: !cir.type_param<"name">.
+MlirType cirTypeParamTypeGet(MlirContext ctx, const char *name);
+
+/// Get the name of a type parameter type.
+MlirStringRef cirTypeParamTypeGetName(MlirType typeParamType);
+
+//===----------------------------------------------------------------------===//
+// cot-generics: Ops
+//===----------------------------------------------------------------------===//
+
+/// Build cir.generic_apply — call a generic function with type substitutions.
+/// subsKeys and subsTypes arrays must have numSubs elements.
+/// Returns the result value, or null for void calls.
+MlirValue cirBuildGenericApply(MlirBlock block, MlirLocation loc,
+                               const char *callee,
+                               intptr_t numArgs, const MlirValue *args,
+                               intptr_t numSubs,
+                               const char *const *subsKeys,
+                               const MlirType *subsTypes,
+                               intptr_t numResults,
+                               const MlirType *resultTypes);
+
+//===----------------------------------------------------------------------===//
 // Type inspectors
 //===----------------------------------------------------------------------===//
 
 bool cirTypeIsPtr(MlirType type);
+bool cirTypeIsTypeParam(MlirType type);
 bool cirTypeIsRef(MlirType type);
 bool cirTypeIsStruct(MlirType type);
 bool cirTypeIsArray(MlirType type);

@@ -58,3 +58,7 @@ endif()
 if(COT_HAS_UNIONS)
   target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_UNIONS)
 endif()
+
+if(COT_HAS_GENERICS)
+  target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_GENERICS)
+endif()
