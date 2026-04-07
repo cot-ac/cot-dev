@@ -38,6 +38,9 @@ public:
   /// Use for: LLVM-level optimizations, target-specific transforms.
   void addPostLoweringPass(std::unique_ptr<mlir::Pass> pass);
 
+  /// Add extra arguments to the linker command (e.g., runtime libraries).
+  void addExtraLinkArg(llvm::StringRef arg);
+
   //--- Pipeline execution ---
 
   /// Run the full pipeline: CIR -> typed CIR -> LLVM -> native binary.
@@ -68,6 +71,7 @@ private:
   std::vector<std::unique_ptr<mlir::Pass>> preSemaPasses;
   std::vector<std::unique_ptr<mlir::Pass>> postSemaPasses;
   std::vector<std::unique_ptr<mlir::Pass>> postLoweringPasses;
+  std::vector<std::string> extraLinkArgs;
 };
 
 } // namespace cot

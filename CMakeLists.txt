@@ -158,6 +158,23 @@ else()
   set(COT_HAS_ERRORS OFF)
 endif()
 
+# Discover cot-test construct (sibling repo)
+set(COT_TEST_SOURCE_DIR "${PROJECT_SOURCE_DIR}/../cot-test" CACHE PATH
+    "Path to cot-test source")
+set(COT_TEST_BUILD_DIR "${COT_TEST_SOURCE_DIR}/build" CACHE PATH
+    "Path to cot-test build")
+
+if(EXISTS "${COT_TEST_BUILD_DIR}/lib/libCotTest.a")
+  add_library(CotTest STATIC IMPORTED GLOBAL)
+  set_target_properties(CotTest PROPERTIES
+    IMPORTED_LOCATION "${COT_TEST_BUILD_DIR}/lib/libCotTest.a")
+  message(STATUS "Found cot-test: ${COT_TEST_BUILD_DIR}/lib/libCotTest.a")
+  set(COT_HAS_TEST ON)
+else()
+  message(STATUS "cot-test not found — build cot-test first")
+  set(COT_HAS_TEST OFF)
+endif()
+
 add_subdirectory(include/cot/CIR)
 add_subdirectory(lib/CIR)
 add_subdirectory(lib/Pipeline)

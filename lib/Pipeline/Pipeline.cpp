@@ -47,6 +47,10 @@ void PipelineBuilder::addPostLoweringPass(std::unique_ptr<Pass> pass) {
   postLoweringPasses.push_back(std::move(pass));
 }
 
+void PipelineBuilder::addExtraLinkArg(llvm::StringRef arg) {
+  extraLinkArgs.push_back(arg.str());
+}
+
 //===----------------------------------------------------------------------===//
 // Sema stages: the fixed ordering that makes everything work
 //===----------------------------------------------------------------------===//
@@ -154,10 +158,12 @@ LogicalResult PipelineBuilder::runCodegen(ModuleOp module,
     return failure();
   }
 
-  // Compile: clang -o output output.ll
+  // Compile: clang -o output output.ll [extra args]
   llvm::SmallVector<llvm::StringRef> linkArgs = {
       *clangPath, "-o", outputPath, llPath,
       "-Wno-override-module"};
+  for (const auto &arg : extraLinkArgs)
+    linkArgs.push_back(arg);
   int linkResult = llvm::sys::ExecuteAndWait(*clangPath, linkArgs);
   if (linkResult != 0)
     return failure();

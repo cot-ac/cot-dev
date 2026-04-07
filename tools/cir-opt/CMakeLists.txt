@@ -166,6 +166,25 @@ if(COT_HAS_ERRORS)
   )
 endif()
 
+# Link cot-test construct when available.
+if(COT_HAS_TEST)
+  target_include_directories(cir-opt PRIVATE
+    "${COT_TEST_SOURCE_DIR}/include"
+    "${COT_TEST_BUILD_DIR}/include")
+  if(APPLE)
+    target_link_options(cir-opt PRIVATE
+      "-Wl,-force_load,${COT_TEST_BUILD_DIR}/lib/libCotTest.a")
+  else()
+    target_link_options(cir-opt PRIVATE
+      "-Wl,--whole-archive" "${COT_TEST_BUILD_DIR}/lib/libCotTest.a"
+      "-Wl,--no-whole-archive")
+  endif()
+  target_link_libraries(cir-opt PRIVATE
+    MLIRFuncDialect
+    MLIRSideEffectInterfaces
+  )
+endif()
+
 llvm_map_components_to_libnames(LLVM_LIBS
   core support target
   aarch64info aarch64desc aarch64codegen aarch64asmparser
