@@ -53,6 +53,10 @@
 #include "generics/Types.h"
 #include "generics/Ops.h"
 #endif
+#ifdef COT_HAS_TRAITS
+#include "traits/Types.h"
+#include "traits/Ops.h"
+#endif
 
 #include "mlir/CAPI/IR.h"
 #include "mlir/IR/Builders.h"
@@ -240,6 +244,9 @@ void _cot_anchor_UnionsConstruct(void);
 #ifdef COT_HAS_GENERICS
 void _cot_anchor_GenericsConstruct(void);
 #endif
+#ifdef COT_HAS_TRAITS
+void _cot_anchor_TraitsConstruct(void);
+#endif
 } // extern "C"
 
 void cirForceConstructLink() {
@@ -280,6 +287,9 @@ void cirForceConstructLink() {
 #endif
 #ifdef COT_HAS_GENERICS
   _cot_anchor_GenericsConstruct();
+#endif
+#ifdef COT_HAS_TRAITS
+  _cot_anchor_TraitsConstruct();
 #endif
 }
 

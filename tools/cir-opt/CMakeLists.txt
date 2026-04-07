@@ -96,6 +96,12 @@ if(COT_HAS_GENERICS)
     MLIRFuncDialect MLIRPass MLIRInferTypeOpInterface MLIRSideEffectInterfaces)
 endif()
 
+link_core_construct(traits CotTraits TRAITS)
+if(COT_HAS_TRAITS)
+  target_link_libraries(cir-opt PRIVATE
+    MLIRFuncDialect MLIRInferTypeOpInterface MLIRSideEffectInterfaces)
+endif()
+
 link_core_construct(test CotTest TEST)
 if(COT_HAS_TEST)
   target_link_libraries(cir-opt PRIVATE

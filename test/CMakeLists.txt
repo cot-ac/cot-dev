@@ -86,6 +86,7 @@ if(COT_HAS_CORE)
   link_core_construct_test(transform_api_test enums CotEnums)
   link_core_construct_test(transform_api_test unions CotUnions)
   link_core_construct_test(transform_api_test generics CotGenerics)
+  link_core_construct_test(transform_api_test traits CotTraits)
 
   target_link_libraries(transform_api_test PRIVATE
     COTPipeline

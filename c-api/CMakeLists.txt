@@ -62,3 +62,7 @@ endif()
 if(COT_HAS_GENERICS)
   target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_GENERICS)
 endif()
+
+if(COT_HAS_TRAITS)
+  target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_TRAITS)
+endif()
