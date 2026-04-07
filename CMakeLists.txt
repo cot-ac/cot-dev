@@ -43,6 +43,7 @@ set(CORE_CONSTRUCTS
   "unions:CotUnions:UNIONS"
   "generics:CotGenerics:GENERICS"
   "traits:CotTraits:TRAITS"
+  "vwt:CotVWT:VWT"
 )
 
 foreach(entry ${CORE_CONSTRUCTS})

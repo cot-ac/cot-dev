@@ -57,6 +57,9 @@
 #include "traits/Types.h"
 #include "traits/Ops.h"
 #endif
+#ifdef COT_HAS_VWT
+#include "vwt/Ops.h"
+#endif
 
 #include "mlir/CAPI/IR.h"
 #include "mlir/IR/Builders.h"
@@ -247,6 +250,9 @@ void _cot_anchor_GenericsConstruct(void);
 #ifdef COT_HAS_TRAITS
 void _cot_anchor_TraitsConstruct(void);
 #endif
+#ifdef COT_HAS_VWT
+void _cot_anchor_VWTConstruct(void);
+#endif
 } // extern "C"
 
 void cirForceConstructLink() {
@@ -290,6 +296,9 @@ void cirForceConstructLink() {
 #endif
 #ifdef COT_HAS_TRAITS
   _cot_anchor_TraitsConstruct();
+#endif
+#ifdef COT_HAS_VWT
+  _cot_anchor_VWTConstruct();
 #endif
 }
 

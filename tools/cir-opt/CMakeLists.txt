@@ -102,6 +102,12 @@ if(COT_HAS_TRAITS)
     MLIRFuncDialect MLIRInferTypeOpInterface MLIRSideEffectInterfaces)
 endif()
 
+link_core_construct(vwt CotVWT VWT)
+if(COT_HAS_VWT)
+  target_link_libraries(cir-opt PRIVATE
+    MLIRSideEffectInterfaces)
+endif()
+
 link_core_construct(test CotTest TEST)
 if(COT_HAS_TEST)
   target_link_libraries(cir-opt PRIVATE
