@@ -39,6 +39,7 @@ set(CORE_CONSTRUCTS
   "optionals:CotOptionals:OPTIONALS"
   "errors:CotErrors:ERRORS"
   "test:CotTest:TEST"
+  "enums:CotEnums:ENUMS"
 )
 
 foreach(entry ${CORE_CONSTRUCTS})
