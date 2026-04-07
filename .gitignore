@@ -1,0 +1,14 @@
+build/
+.cache/
+.DS_Store
+*.o
+*.a
+*.so
+*.dylib
+.vscode/
+.idea/
+*.swp
+*~
+test_output
+test_output_p2
+test_output.o
