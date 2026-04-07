@@ -12,3 +12,8 @@ set(LLVM_TARGET_DEFINITIONS CIRTypes.td)
 mlir_tablegen(CIRTypes.h.inc -gen-typedef-decls)
 mlir_tablegen(CIRTypes.cpp.inc -gen-typedef-defs)
 add_public_tablegen_target(CIRTypesIncGen)
+
+set(LLVM_TARGET_DEFINITIONS CIRInterfaces.td)
+mlir_tablegen(CIRInterfaces.h.inc -gen-type-interface-decls)
+mlir_tablegen(CIRInterfaces.cpp.inc -gen-type-interface-defs)
+add_public_tablegen_target(CIRInterfacesIncGen)

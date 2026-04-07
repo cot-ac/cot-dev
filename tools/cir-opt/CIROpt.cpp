@@ -35,6 +35,7 @@ int main(int argc, char **argv) {
   // them available for parsing.
   registry.addExtension(+[](mlir::MLIRContext *ctx,
                              cir::CIRDialect *dialect) {
+    cot::validateConstructDependencies();
     for (auto &construct : cot::getConstructRegistry())
       construct->registerOpsAndTypes(*ctx);
   });

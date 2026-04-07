@@ -1,7 +1,9 @@
 //===- CIRDialect.cpp - CIR dialect implementation ----------*- C++ -*-===//
 #include "cot/CIR/CIRDialect.h"
+#include "cot/CIR/CIRInterfaces.h"
 #include "cot/CIR/CIROps.h"
 #include "cot/CIR/CIRTypes.h"
+#include "cot/Construct/Construct.h"
 
 #include "mlir/Dialect/DLTI/DLTI.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -21,19 +23,32 @@ using namespace cir;
 #define GET_OP_CLASSES
 #include "cot/CIR/CIROps.cpp.inc"
 
+// TypeInterface implementations
+#include "cot/CIR/CIRInterfaces.cpp.inc"
+
 void CIRDialect::initialize() {
   // No statically-defined ops or types in the framework.
   // Concrete ops/types are defined in construct repos (cot-core, etc.)
   // and registered via registerConstructOp/registerConstructType.
 }
 
-// Type parsing/printing — no CIR types in the framework yet.
-// When construct repos add types (e.g., !cir.ptr, !cir.optional),
-// they will be registered as dynamic types.
+// Type parsing/printing — delegates to registered constructs, then
+// falls back to dynamic types (ExtensibleDialect plugins).
 Type CIRDialect::parseType(DialectAsmParser &parser) const {
   StringRef keyword;
   if (parser.parseKeyword(&keyword))
     return Type();
+
+  // Try construct type parsers (static types from cot-memory, etc.)
+  for (auto &construct : cot::getConstructRegistry()) {
+    Type result;
+    auto parseResult = construct->parseType(keyword, parser, result);
+    if (parseResult.has_value()) {
+      if (succeeded(*parseResult))
+        return result;
+      return Type();
+    }
+  }
 
   // Try parsing as a dynamic type (from construct plugins)
   Type resultType;
@@ -52,6 +67,12 @@ Type CIRDialect::parseType(DialectAsmParser &parser) const {
 
 void CIRDialect::printType(Type type,
                             DialectAsmPrinter &printer) const {
+  // Try construct type printers (static types from cot-memory, etc.)
+  for (auto &construct : cot::getConstructRegistry()) {
+    if (succeeded(construct->printType(type, printer)))
+      return;
+  }
+
   // Try printing as a dynamic type
   if (succeeded(printIfDynamicType(type, printer)))
     return;

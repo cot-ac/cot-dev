@@ -44,4 +44,20 @@ if(COT_HAS_CORE)
     MLIRInferTypeOpInterface
     MLIRSideEffectInterfaces
   )
+
+  # Link cot-memory if available
+  if(COT_HAS_MEMORY)
+    target_compile_definitions(e2e_phase2_test PRIVATE COT_HAS_MEMORY)
+    target_include_directories(e2e_phase2_test PRIVATE
+      "${COT_MEMORY_SOURCE_DIR}/include"
+      "${COT_MEMORY_BUILD_DIR}/include")
+    if(APPLE)
+      target_link_options(e2e_phase2_test PRIVATE
+        "-Wl,-force_load,${COT_MEMORY_BUILD_DIR}/lib/libCotMemory.a")
+    else()
+      target_link_options(e2e_phase2_test PRIVATE
+        "-Wl,--whole-archive" "${COT_MEMORY_BUILD_DIR}/lib/libCotMemory.a"
+        "-Wl,--no-whole-archive")
+    endif()
+  endif()
 endif()

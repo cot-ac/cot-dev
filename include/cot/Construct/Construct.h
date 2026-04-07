@@ -2,6 +2,7 @@
 #ifndef COT_CONSTRUCT_CONSTRUCT_H
 #define COT_CONSTRUCT_CONSTRUCT_H
 
+#include "mlir/IR/DialectImplementation.h"
 #include "mlir/IR/ExtensibleDialect.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Pass/PassManager.h"
@@ -22,6 +23,13 @@ public:
 
   /// Human-readable name for logging.
   virtual llvm::StringRef getName() const = 0;
+
+  /// Return the names of constructs this one requires to be loaded.
+  /// The framework validates at initialization that all dependencies
+  /// are present. Override to declare dependencies on other constructs.
+  virtual llvm::SmallVector<llvm::StringRef> getRequiredConstructs() const {
+    return {};
+  }
 
   /// Register this construct's static ops and types with the context.
   /// Called once at framework initialization.
@@ -50,10 +58,29 @@ public:
   /// Add this construct's type conversions (CIR types -> LLVM types).
   /// Called once during CIR->LLVM pass setup.
   virtual void addTypeConversions(mlir::TypeConverter &typeConverter) {}
+
+  /// Try to parse a CIR type with the given keyword (mnemonic).
+  /// Return empty OptionalParseResult if this construct doesn't handle it.
+  virtual mlir::OptionalParseResult parseType(
+      llvm::StringRef keyword, mlir::DialectAsmParser &parser,
+      mlir::Type &result) const {
+    return {};
+  }
+
+  /// Try to print a CIR type. Return failure if not handled.
+  virtual mlir::LogicalResult printType(
+      mlir::Type type, mlir::DialectAsmPrinter &printer) const {
+    return mlir::failure();
+  }
 };
 
 /// Global construct registry — populated at static init.
 llvm::SmallVector<std::unique_ptr<Construct>> &getConstructRegistry();
+
+/// Validate that all construct dependencies are satisfied.
+/// Call after all constructs have been registered (linked).
+/// Terminates with an error if a required construct is missing.
+void validateConstructDependencies();
 
 } // namespace cot
 

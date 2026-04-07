@@ -18,8 +18,12 @@ def CIR_Dialect : Dialect {
   // Enable runtime extension: constructs register new ops via plugins
   let isExtensible = 1;
 
-  // Use generated type parser/printer for all CIR types
-  let useDefaultTypePrinterParser = 1;
+  // Type parsing/printing is handled by CIRDialect::parseType/printType
+  // which delegates to registered constructs. NOT using the generated
+  // default because construct repos define types in separate compilation
+  // units — the generated code would try to define CIRDialect methods
+  // in each construct's .cpp.inc.
+  let useDefaultTypePrinterParser = 0;
 
   // Required for constant folding across blocks — creates cir.constant
   // when a constant value needs to be rematerialized in a new block
@@ -48,11 +52,21 @@ def CIR_Dialect : Dialect {
       addOperations<Args...>();
     }
 
-    /// Register static types from a construct.
+    /// Register static types from a construct (e.g., cot-memory).
+    /// Wraps the protected addTypes<>().
     template <typename... Args>
     void registerConstructTypes() {
       addTypes<Args...>();
     }
+
+    /// Parse a CIR type — delegates to registered constructs,
+    /// then falls back to dynamic types.
+    ::mlir::Type parseType(::mlir::DialectAsmParser &parser) const override;
+
+    /// Print a CIR type — delegates to registered constructs,
+    /// then falls back to dynamic types.
+    void printType(::mlir::Type type,
+                   ::mlir::DialectAsmPrinter &printer) const override;
   }];
 }
 

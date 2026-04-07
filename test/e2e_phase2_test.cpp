@@ -1,10 +1,13 @@
 //===- e2e_phase2_test.cpp - Phase 2 gate test ----------------*- C++ -*-===//
 //
-// Programmatically build:
+// Programmatically build (uses ops from cot-core + cot-memory):
 //   func @main() -> i32 {
+//     %a = cir.alloca i32 : !cir.ptr
 //     %c = cir.constant 42 : i32
+//     cir.store %c, %a : i32, !cir.ptr
+//     %v = cir.load %a : !cir.ptr to i32
 //     %one = cir.constant 1 : i32
-//     %r = cir.add %c, %one : i32
+//     %r = cir.add %v, %one : i32
 //     return %r : i32
 //   }
 //
@@ -15,6 +18,11 @@
 #include "cot/Construct/Construct.h"
 #include "cot/CIR/CIRDialect.h"
 #include "cot-core/Ops.h"
+
+#ifdef COT_HAS_MEMORY
+#include "cot-memory/Types.h"
+#include "cot-memory/Ops.h"
+#endif
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -35,7 +43,7 @@ int main() {
   ctx.getOrLoadDialect<LLVM::LLVMDialect>();
   ctx.getOrLoadDialect<arith::ArithDialect>();
 
-  // Register construct ops (cot-core linked via -force_load)
+  // Register construct ops (cot-core + cot-memory linked via -force_load)
   for (auto &construct : cot::getConstructRegistry())
     construct->registerOpsAndTypes(ctx);
 
@@ -54,17 +62,39 @@ int main() {
   auto *entryBlock = mainFunc.addEntryBlock();
   builder.setInsertionPointToStart(entryBlock);
 
+#ifdef COT_HAS_MEMORY
+  // %a = cir.alloca i32 : !cir.ptr
+  auto ptrType = cir::PointerType::get(&ctx);
+  auto allocaOp = builder.create<cir::AllocaOp>(
+      loc, ptrType, TypeAttr::get(i32Type));
+
   // %c = cir.constant 42 : i32
   auto constant42 = builder.create<cir::ConstantOp>(
       loc, i32Type, builder.getI32IntegerAttr(42));
+
+  // cir.store %c, %a : i32, !cir.ptr
+  builder.create<cir::StoreOp>(loc, constant42, allocaOp);
+
+  // %v = cir.load %a : !cir.ptr to i32
+  auto loadVal = builder.create<cir::LoadOp>(
+      loc, i32Type, allocaOp);
 
   // %one = cir.constant 1 : i32
   auto constant1 = builder.create<cir::ConstantOp>(
       loc, i32Type, builder.getI32IntegerAttr(1));
 
-  // %r = cir.add %c, %one : i32
+  // %r = cir.add %v, %one : i32
+  auto addResult = builder.create<cir::AddOp>(
+      loc, i32Type, loadVal, constant1);
+#else
+  // Fallback: cir.constant 42 + cir.constant 1 → cir.add
+  auto constant42 = builder.create<cir::ConstantOp>(
+      loc, i32Type, builder.getI32IntegerAttr(42));
+  auto constant1 = builder.create<cir::ConstantOp>(
+      loc, i32Type, builder.getI32IntegerAttr(1));
   auto addResult = builder.create<cir::AddOp>(
       loc, i32Type, constant42, constant1);
+#endif
 
   // return %r : i32
   builder.create<func::ReturnOp>(loc, ValueRange{addResult});
