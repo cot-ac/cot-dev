@@ -9,14 +9,14 @@
 #include "cot/Construct/Construct.h"
 
 #ifdef COT_HAS_CORE
-#include "cot-core/Ops.h"
+#include "arith/Ops.h"
 #endif
 #ifdef COT_HAS_MEMORY
-#include "cot-memory/Types.h"
-#include "cot-memory/Ops.h"
+#include "memory/Types.h"
+#include "memory/Ops.h"
 #endif
 #ifdef COT_HAS_FLOW
-#include "cot-flow/Ops.h"
+#include "flow/Ops.h"
 #endif
 
 #include "mlir/CAPI/IR.h"

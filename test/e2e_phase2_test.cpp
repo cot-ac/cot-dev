@@ -17,11 +17,11 @@
 #include "cot/Pipeline/Pipeline.h"
 #include "cot/Construct/Construct.h"
 #include "cot/CIR/CIRDialect.h"
-#include "cot-core/Ops.h"
+#include "arith/Ops.h"
 
 #ifdef COT_HAS_MEMORY
-#include "cot-memory/Types.h"
-#include "cot-memory/Ops.h"
+#include "memory/Types.h"
+#include "memory/Ops.h"
 #endif
 
 #include "mlir/Dialect/Arith/IR/Arith.h"

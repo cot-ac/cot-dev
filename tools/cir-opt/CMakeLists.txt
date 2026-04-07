@@ -14,175 +14,73 @@ target_link_libraries(cir-opt PRIVATE
   MLIRPass
 )
 
-# Link cot-core construct when available.
-# -force_load prevents dead-stripping of COT_REGISTER_CONSTRUCT static ctors.
+# Link core constructs via -force_load (prevents dead-stripping of
+# COT_REGISTER_CONSTRUCT static ctors).
+# Include directories already added by parent CMakeLists.txt.
+
+# Helper macro: force-load a construct library from core/
+macro(link_core_construct dir_name lib_name var_name)
+  if(COT_HAS_${var_name})
+    set(_lib "${CORE_BUILD_DIR}/${dir_name}/lib/lib${lib_name}.a")
+    if(APPLE)
+      target_link_options(cir-opt PRIVATE "-Wl,-force_load,${_lib}")
+    else()
+      target_link_options(cir-opt PRIVATE
+        "-Wl,--whole-archive" "${_lib}" "-Wl,--no-whole-archive")
+    endif()
+  endif()
+endmacro()
+
+link_core_construct(arith CotArith CORE)
 if(COT_HAS_CORE)
-  target_include_directories(cir-opt PRIVATE
-    "${COT_CORE_SOURCE_DIR}/include"
-    "${COT_CORE_BUILD_DIR}/include")
-  if(APPLE)
-    target_link_options(cir-opt PRIVATE
-      "-Wl,-force_load,${COT_CORE_BUILD_DIR}/lib/libCotCore.a")
-  else()
-    target_link_options(cir-opt PRIVATE
-      "-Wl,--whole-archive" "${COT_CORE_BUILD_DIR}/lib/libCotCore.a"
-      "-Wl,--no-whole-archive")
-  endif()
   target_link_libraries(cir-opt PRIVATE
-    MLIRCastInterfaces
-    MLIRInferTypeOpInterface
-    MLIRSideEffectInterfaces
-  )
+    MLIRCastInterfaces MLIRInferTypeOpInterface MLIRSideEffectInterfaces)
 endif()
 
-# Link cot-memory construct when available.
+link_core_construct(memory CotMemory MEMORY)
 if(COT_HAS_MEMORY)
-  target_include_directories(cir-opt PRIVATE
-    "${COT_MEMORY_SOURCE_DIR}/include"
-    "${COT_MEMORY_BUILD_DIR}/include")
-  if(APPLE)
-    target_link_options(cir-opt PRIVATE
-      "-Wl,-force_load,${COT_MEMORY_BUILD_DIR}/lib/libCotMemory.a")
-  else()
-    target_link_options(cir-opt PRIVATE
-      "-Wl,--whole-archive" "${COT_MEMORY_BUILD_DIR}/lib/libCotMemory.a"
-      "-Wl,--no-whole-archive")
-  endif()
-  target_link_libraries(cir-opt PRIVATE
-    MLIRInferTypeOpInterface
-  )
+  target_link_libraries(cir-opt PRIVATE MLIRInferTypeOpInterface)
 endif()
 
-# Link cot-flow construct when available.
+link_core_construct(flow CotFlow FLOW)
 if(COT_HAS_FLOW)
-  target_include_directories(cir-opt PRIVATE
-    "${COT_FLOW_SOURCE_DIR}/include"
-    "${COT_FLOW_BUILD_DIR}/include")
-  if(APPLE)
-    target_link_options(cir-opt PRIVATE
-      "-Wl,-force_load,${COT_FLOW_BUILD_DIR}/lib/libCotFlow.a")
-  else()
-    target_link_options(cir-opt PRIVATE
-      "-Wl,--whole-archive" "${COT_FLOW_BUILD_DIR}/lib/libCotFlow.a"
-      "-Wl,--no-whole-archive")
-  endif()
-  target_link_libraries(cir-opt PRIVATE
-    MLIRControlFlowInterfaces
-  )
+  target_link_libraries(cir-opt PRIVATE MLIRControlFlowInterfaces)
 endif()
 
-# Link cot-structs construct when available.
+link_core_construct(structs CotStructs STRUCTS)
 if(COT_HAS_STRUCTS)
-  target_include_directories(cir-opt PRIVATE
-    "${COT_STRUCTS_SOURCE_DIR}/include"
-    "${COT_STRUCTS_BUILD_DIR}/include")
-  if(APPLE)
-    target_link_options(cir-opt PRIVATE
-      "-Wl,-force_load,${COT_STRUCTS_BUILD_DIR}/lib/libCotStructs.a")
-  else()
-    target_link_options(cir-opt PRIVATE
-      "-Wl,--whole-archive" "${COT_STRUCTS_BUILD_DIR}/lib/libCotStructs.a"
-      "-Wl,--no-whole-archive")
-  endif()
   target_link_libraries(cir-opt PRIVATE
-    MLIRInferTypeOpInterface
-    MLIRSideEffectInterfaces
-  )
+    MLIRInferTypeOpInterface MLIRSideEffectInterfaces)
 endif()
 
-# Link cot-arrays construct when available.
+link_core_construct(arrays CotArrays ARRAYS)
 if(COT_HAS_ARRAYS)
-  target_include_directories(cir-opt PRIVATE
-    "${COT_ARRAYS_SOURCE_DIR}/include"
-    "${COT_ARRAYS_BUILD_DIR}/include")
-  if(APPLE)
-    target_link_options(cir-opt PRIVATE
-      "-Wl,-force_load,${COT_ARRAYS_BUILD_DIR}/lib/libCotArrays.a")
-  else()
-    target_link_options(cir-opt PRIVATE
-      "-Wl,--whole-archive" "${COT_ARRAYS_BUILD_DIR}/lib/libCotArrays.a"
-      "-Wl,--no-whole-archive")
-  endif()
   target_link_libraries(cir-opt PRIVATE
-    MLIRInferTypeOpInterface
-    MLIRSideEffectInterfaces
-  )
+    MLIRInferTypeOpInterface MLIRSideEffectInterfaces)
 endif()
 
-# Link cot-slices construct when available.
+link_core_construct(slices CotSlices SLICES)
 if(COT_HAS_SLICES)
-  target_include_directories(cir-opt PRIVATE
-    "${COT_SLICES_SOURCE_DIR}/include"
-    "${COT_SLICES_BUILD_DIR}/include")
-  if(APPLE)
-    target_link_options(cir-opt PRIVATE
-      "-Wl,-force_load,${COT_SLICES_BUILD_DIR}/lib/libCotSlices.a")
-  else()
-    target_link_options(cir-opt PRIVATE
-      "-Wl,--whole-archive" "${COT_SLICES_BUILD_DIR}/lib/libCotSlices.a"
-      "-Wl,--no-whole-archive")
-  endif()
   target_link_libraries(cir-opt PRIVATE
-    MLIRInferTypeOpInterface
-    MLIRSideEffectInterfaces
-  )
+    MLIRInferTypeOpInterface MLIRSideEffectInterfaces)
 endif()
 
-# Link cot-optionals construct when available.
+link_core_construct(optionals CotOptionals OPTIONALS)
 if(COT_HAS_OPTIONALS)
-  target_include_directories(cir-opt PRIVATE
-    "${COT_OPTIONALS_SOURCE_DIR}/include"
-    "${COT_OPTIONALS_BUILD_DIR}/include")
-  if(APPLE)
-    target_link_options(cir-opt PRIVATE
-      "-Wl,-force_load,${COT_OPTIONALS_BUILD_DIR}/lib/libCotOptionals.a")
-  else()
-    target_link_options(cir-opt PRIVATE
-      "-Wl,--whole-archive" "${COT_OPTIONALS_BUILD_DIR}/lib/libCotOptionals.a"
-      "-Wl,--no-whole-archive")
-  endif()
   target_link_libraries(cir-opt PRIVATE
-    MLIRInferTypeOpInterface
-    MLIRSideEffectInterfaces
-  )
+    MLIRInferTypeOpInterface MLIRSideEffectInterfaces)
 endif()
 
-# Link cot-errors construct when available.
+link_core_construct(errors CotErrors ERRORS)
 if(COT_HAS_ERRORS)
-  target_include_directories(cir-opt PRIVATE
-    "${COT_ERRORS_SOURCE_DIR}/include"
-    "${COT_ERRORS_BUILD_DIR}/include")
-  if(APPLE)
-    target_link_options(cir-opt PRIVATE
-      "-Wl,-force_load,${COT_ERRORS_BUILD_DIR}/lib/libCotErrors.a")
-  else()
-    target_link_options(cir-opt PRIVATE
-      "-Wl,--whole-archive" "${COT_ERRORS_BUILD_DIR}/lib/libCotErrors.a"
-      "-Wl,--no-whole-archive")
-  endif()
   target_link_libraries(cir-opt PRIVATE
-    MLIRInferTypeOpInterface
-    MLIRSideEffectInterfaces
-  )
+    MLIRInferTypeOpInterface MLIRSideEffectInterfaces)
 endif()
 
-# Link cot-test construct when available.
+link_core_construct(test CotTest TEST)
 if(COT_HAS_TEST)
-  target_include_directories(cir-opt PRIVATE
-    "${COT_TEST_SOURCE_DIR}/include"
-    "${COT_TEST_BUILD_DIR}/include")
-  if(APPLE)
-    target_link_options(cir-opt PRIVATE
-      "-Wl,-force_load,${COT_TEST_BUILD_DIR}/lib/libCotTest.a")
-  else()
-    target_link_options(cir-opt PRIVATE
-      "-Wl,--whole-archive" "${COT_TEST_BUILD_DIR}/lib/libCotTest.a"
-      "-Wl,--no-whole-archive")
-  endif()
   target_link_libraries(cir-opt PRIVATE
-    MLIRFuncDialect
-    MLIRSideEffectInterfaces
-  )
+    MLIRFuncDialect MLIRSideEffectInterfaces)
 endif()
 
 llvm_map_components_to_libnames(LLVM_LIBS
