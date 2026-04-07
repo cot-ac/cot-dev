@@ -83,6 +83,12 @@ if(COT_HAS_ENUMS)
     MLIRInferTypeOpInterface MLIRSideEffectInterfaces)
 endif()
 
+link_core_construct(unions CotUnions UNIONS)
+if(COT_HAS_UNIONS)
+  target_link_libraries(cir-opt PRIVATE
+    MLIRInferTypeOpInterface MLIRSideEffectInterfaces)
+endif()
+
 link_core_construct(test CotTest TEST)
 if(COT_HAS_TEST)
   target_link_libraries(cir-opt PRIVATE

@@ -40,6 +40,7 @@ set(CORE_CONSTRUCTS
   "errors:CotErrors:ERRORS"
   "test:CotTest:TEST"
   "enums:CotEnums:ENUMS"
+  "unions:CotUnions:UNIONS"
 )
 
 foreach(entry ${CORE_CONSTRUCTS})
