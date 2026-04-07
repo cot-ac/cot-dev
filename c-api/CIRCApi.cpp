@@ -1,6 +1,6 @@
 //===- CIRCApi.cpp - CIR C API implementation -----------------*- C++ -*-===//
 //
-// C API builder functions for all Phase 2 CIR ops.
+// C API builder functions for all core CIR ops.
 // Construct headers are conditionally included based on build-time discovery.
 //
 //===----------------------------------------------------------------------===//
@@ -18,9 +18,41 @@
 #ifdef COT_HAS_FLOW
 #include "flow/Ops.h"
 #endif
+#ifdef COT_HAS_STRUCTS
+#include "structs/Types.h"
+#include "structs/Ops.h"
+#endif
+#ifdef COT_HAS_ARRAYS
+#include "arrays/Types.h"
+#include "arrays/Ops.h"
+#endif
+#ifdef COT_HAS_SLICES
+#include "slices/Types.h"
+#include "slices/Ops.h"
+#endif
+#ifdef COT_HAS_OPTIONALS
+#include "optionals/Types.h"
+#include "optionals/Ops.h"
+#endif
+#ifdef COT_HAS_ERRORS
+#include "errors/Types.h"
+#include "errors/Ops.h"
+#endif
+#ifdef COT_HAS_ENUMS
+#include "enums/Types.h"
+#include "enums/Ops.h"
+#endif
+#ifdef COT_HAS_UNIONS
+#include "unions/Types.h"
+#include "unions/Ops.h"
+#endif
+#ifdef COT_HAS_TEST
+#include "test/Ops.h"
+#endif
 
 #include "mlir/CAPI/IR.h"
 #include "mlir/IR/Builders.h"
+#include "mlir-c/BuiltinAttributes.h"
 
 using namespace mlir;
 
@@ -320,6 +352,10 @@ MlirType cirRefTypeGet(MlirType pointeeType) {
   return wrap(cir::RefType::get(pt.getContext(), pt));
 }
 
+MlirType cirRefTypeGetPointee(MlirType refType) {
+  return wrap(mlir::cast<cir::RefType>(unwrap(refType)).getPointeeType());
+}
+
 MlirValue cirBuildAlloca(MlirBlock block, MlirLocation loc,
                          MlirType elemType) {
   auto builder = getBuilderAtEnd(block);
@@ -391,3 +427,585 @@ void cirBuildTrap(MlirBlock block, MlirLocation loc) {
 }
 
 #endif // COT_HAS_FLOW
+
+//===----------------------------------------------------------------------===//
+// cot-structs: Types and Ops
+//===----------------------------------------------------------------------===//
+
+#ifdef COT_HAS_STRUCTS
+
+MlirType cirStructTypeGet(MlirContext ctx, const char *name,
+                          intptr_t numFields,
+                          const char *const *fieldNames,
+                          const MlirType *fieldTypes) {
+  auto *context = unwrap(ctx);
+  SmallVector<StringAttr> names;
+  SmallVector<Type> types;
+  for (intptr_t i = 0; i < numFields; i++) {
+    names.push_back(StringAttr::get(context, fieldNames[i]));
+    types.push_back(unwrap(fieldTypes[i]));
+  }
+  return wrap(cir::StructType::get(
+      context, StringAttr::get(context, name), names, types));
+}
+
+MlirStringRef cirStructTypeGetName(MlirType structType) {
+  auto sty = mlir::cast<cir::StructType>(unwrap(structType));
+  auto name = sty.getName();
+  return mlirStringRefCreate(name.data(), name.size());
+}
+
+intptr_t cirStructTypeGetNumFields(MlirType structType) {
+  return mlir::cast<cir::StructType>(unwrap(structType))
+      .getFieldTypes().size();
+}
+
+MlirStringRef cirStructTypeGetFieldName(MlirType structType,
+                                        intptr_t index) {
+  auto sty = mlir::cast<cir::StructType>(unwrap(structType));
+  auto name = sty.getFieldNames()[index].getValue();
+  return mlirStringRefCreate(name.data(), name.size());
+}
+
+MlirType cirStructTypeGetFieldType(MlirType structType,
+                                   intptr_t index) {
+  return wrap(mlir::cast<cir::StructType>(unwrap(structType))
+                  .getFieldTypes()[index]);
+}
+
+MlirValue cirBuildStructInit(MlirBlock block, MlirLocation loc,
+                             MlirType structType,
+                             intptr_t numFields,
+                             const MlirValue *fields) {
+  auto builder = getBuilderAtEnd(block);
+  SmallVector<Value> fieldVals;
+  for (intptr_t i = 0; i < numFields; i++)
+    fieldVals.push_back(unwrap(fields[i]));
+  return wrap(builder.create<cir::StructInitOp>(
+                         unwrap(loc), unwrap(structType), fieldVals)
+                  .getResult());
+}
+
+MlirValue cirBuildFieldVal(MlirBlock block, MlirLocation loc,
+                           MlirType resultType,
+                           MlirValue input, int64_t index) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::FieldValOp>(
+                         unwrap(loc), unwrap(resultType),
+                         unwrap(input), index)
+                  .getResult());
+}
+
+MlirValue cirBuildFieldPtr(MlirBlock block, MlirLocation loc,
+                           MlirType resultType,
+                           MlirValue base, int64_t index,
+                           MlirType structType) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::FieldPtrOp>(
+                         unwrap(loc), unwrap(resultType),
+                         unwrap(base), static_cast<uint64_t>(index),
+                         unwrap(structType))
+                  .getResult());
+}
+
+#endif // COT_HAS_STRUCTS
+
+//===----------------------------------------------------------------------===//
+// cot-arrays: Types and Ops
+//===----------------------------------------------------------------------===//
+
+#ifdef COT_HAS_ARRAYS
+
+MlirType cirArrayTypeGet(MlirContext ctx, int64_t size,
+                         MlirType elementType) {
+  return wrap(cir::ArrayType::get(unwrap(ctx), size,
+                                  unwrap(elementType)));
+}
+
+int64_t cirArrayTypeGetSize(MlirType arrayType) {
+  return mlir::cast<cir::ArrayType>(unwrap(arrayType)).getSize();
+}
+
+MlirType cirArrayTypeGetElementType(MlirType arrayType) {
+  return wrap(mlir::cast<cir::ArrayType>(unwrap(arrayType))
+                  .getElementType());
+}
+
+MlirValue cirBuildArrayInit(MlirBlock block, MlirLocation loc,
+                            MlirType arrayType,
+                            intptr_t numElements,
+                            const MlirValue *elements) {
+  auto builder = getBuilderAtEnd(block);
+  SmallVector<Value> elems;
+  for (intptr_t i = 0; i < numElements; i++)
+    elems.push_back(unwrap(elements[i]));
+  return wrap(builder.create<cir::ArrayInitOp>(
+                         unwrap(loc), unwrap(arrayType), elems)
+                  .getResult());
+}
+
+MlirValue cirBuildElemVal(MlirBlock block, MlirLocation loc,
+                          MlirType resultType,
+                          MlirValue input, int64_t index) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::ElemValOp>(
+                         unwrap(loc), unwrap(resultType),
+                         unwrap(input), index)
+                  .getResult());
+}
+
+MlirValue cirBuildElemPtr(MlirBlock block, MlirLocation loc,
+                          MlirType resultType,
+                          MlirValue base, MlirValue index,
+                          MlirType arrayType) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::ElemPtrOp>(
+                         unwrap(loc), unwrap(resultType),
+                         unwrap(base), unwrap(index),
+                         TypeAttr::get(unwrap(arrayType)))
+                  .getResult());
+}
+
+#endif // COT_HAS_ARRAYS
+
+//===----------------------------------------------------------------------===//
+// cot-slices: Types and Ops
+//===----------------------------------------------------------------------===//
+
+#ifdef COT_HAS_SLICES
+
+MlirType cirSliceTypeGet(MlirContext ctx, MlirType elementType) {
+  return wrap(cir::SliceType::get(unwrap(ctx), unwrap(elementType)));
+}
+
+MlirType cirSliceTypeGetElementType(MlirType sliceType) {
+  return wrap(mlir::cast<cir::SliceType>(unwrap(sliceType))
+                  .getElementType());
+}
+
+MlirValue cirBuildStringConstant(MlirBlock block, MlirLocation loc,
+                                 MlirType sliceType,
+                                 const char *value) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::StringConstantOp>(
+                         unwrap(loc), unwrap(sliceType), value)
+                  .getResult());
+}
+
+MlirValue cirBuildSlicePtr(MlirBlock block, MlirLocation loc,
+                           MlirType resultType, MlirValue input) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::SlicePtrOp>(
+                         unwrap(loc), unwrap(resultType), unwrap(input))
+                  .getResult());
+}
+
+MlirValue cirBuildSliceLen(MlirBlock block, MlirLocation loc,
+                           MlirValue input) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::SliceLenOp>(
+                         unwrap(loc), builder.getI64Type(), unwrap(input))
+                  .getResult());
+}
+
+MlirValue cirBuildSliceElem(MlirBlock block, MlirLocation loc,
+                            MlirType resultType,
+                            MlirValue input, MlirValue index) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::SliceElemOp>(
+                         unwrap(loc), unwrap(resultType),
+                         unwrap(input), unwrap(index))
+                  .getResult());
+}
+
+MlirValue cirBuildArrayToSlice(MlirBlock block, MlirLocation loc,
+                               MlirType sliceType,
+                               MlirValue base,
+                               MlirValue start, MlirValue end) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::ArrayToSliceOp>(
+                         unwrap(loc), unwrap(sliceType),
+                         unwrap(base), unwrap(start), unwrap(end))
+                  .getResult());
+}
+
+#endif // COT_HAS_SLICES
+
+//===----------------------------------------------------------------------===//
+// cot-optionals: Types and Ops
+//===----------------------------------------------------------------------===//
+
+#ifdef COT_HAS_OPTIONALS
+
+MlirType cirOptionalTypeGet(MlirContext ctx, MlirType payloadType) {
+  return wrap(cir::OptionalType::get(unwrap(ctx),
+                                     unwrap(payloadType)));
+}
+
+MlirType cirOptionalTypeGetPayload(MlirType optionalType) {
+  return wrap(mlir::cast<cir::OptionalType>(unwrap(optionalType))
+                  .getPayloadType());
+}
+
+MlirValue cirBuildNone(MlirBlock block, MlirLocation loc,
+                       MlirType optionalType) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::NoneOp>(unwrap(loc),
+                                          unwrap(optionalType))
+                  .getResult());
+}
+
+MlirValue cirBuildWrapOptional(MlirBlock block, MlirLocation loc,
+                               MlirType optionalType, MlirValue input) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::WrapOptionalOp>(
+                         unwrap(loc), unwrap(optionalType), unwrap(input))
+                  .getResult());
+}
+
+MlirValue cirBuildIsNonNull(MlirBlock block, MlirLocation loc,
+                            MlirValue input) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::IsNonNullOp>(
+                         unwrap(loc), builder.getI1Type(), unwrap(input))
+                  .getResult());
+}
+
+MlirValue cirBuildOptionalPayload(MlirBlock block, MlirLocation loc,
+                                  MlirType resultType, MlirValue input) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::OptionalPayloadOp>(
+                         unwrap(loc), unwrap(resultType), unwrap(input))
+                  .getResult());
+}
+
+#endif // COT_HAS_OPTIONALS
+
+//===----------------------------------------------------------------------===//
+// cot-errors: Types and Ops
+//===----------------------------------------------------------------------===//
+
+#ifdef COT_HAS_ERRORS
+
+MlirType cirErrorUnionTypeGet(MlirContext ctx, MlirType payloadType) {
+  return wrap(cir::ErrorUnionType::get(unwrap(ctx),
+                                       unwrap(payloadType)));
+}
+
+MlirType cirErrorUnionTypeGetPayload(MlirType errorUnionType) {
+  return wrap(mlir::cast<cir::ErrorUnionType>(unwrap(errorUnionType))
+                  .getPayloadType());
+}
+
+MlirValue cirBuildWrapResult(MlirBlock block, MlirLocation loc,
+                             MlirType errorUnionType, MlirValue input) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::WrapResultOp>(
+                         unwrap(loc), unwrap(errorUnionType), unwrap(input))
+                  .getResult());
+}
+
+MlirValue cirBuildWrapError(MlirBlock block, MlirLocation loc,
+                            MlirType errorUnionType, MlirValue code) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::WrapErrorOp>(
+                         unwrap(loc), unwrap(errorUnionType), unwrap(code))
+                  .getResult());
+}
+
+MlirValue cirBuildIsError(MlirBlock block, MlirLocation loc,
+                          MlirValue input) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::IsErrorOp>(
+                         unwrap(loc), builder.getI1Type(), unwrap(input))
+                  .getResult());
+}
+
+MlirValue cirBuildErrorPayload(MlirBlock block, MlirLocation loc,
+                               MlirType resultType, MlirValue input) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::ErrorPayloadOp>(
+                         unwrap(loc), unwrap(resultType), unwrap(input))
+                  .getResult());
+}
+
+MlirValue cirBuildErrorCode(MlirBlock block, MlirLocation loc,
+                            MlirValue input) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::ErrorCodeOp>(
+                         unwrap(loc), builder.getIntegerType(16),
+                         unwrap(input))
+                  .getResult());
+}
+
+#endif // COT_HAS_ERRORS
+
+//===----------------------------------------------------------------------===//
+// cot-enums: Types and Ops
+//===----------------------------------------------------------------------===//
+
+#ifdef COT_HAS_ENUMS
+
+MlirType cirEnumTypeGet(MlirContext ctx, const char *name,
+                        MlirType tagType,
+                        intptr_t numVariants,
+                        const char *const *variants) {
+  auto *context = unwrap(ctx);
+  SmallVector<StringAttr> variantAttrs;
+  for (intptr_t i = 0; i < numVariants; i++)
+    variantAttrs.push_back(StringAttr::get(context, variants[i]));
+  return wrap(cir::EnumType::get(context, StringRef(name),
+                                 unwrap(tagType), variantAttrs));
+}
+
+intptr_t cirEnumTypeGetVariantCount(MlirType enumType) {
+  return mlir::cast<cir::EnumType>(unwrap(enumType))
+      .getVariants().size();
+}
+
+MlirType cirEnumTypeGetTagType(MlirType enumType) {
+  return wrap(mlir::cast<cir::EnumType>(unwrap(enumType))
+                  .getTagType());
+}
+
+MlirStringRef cirEnumTypeGetName(MlirType enumType) {
+  auto name = mlir::cast<cir::EnumType>(unwrap(enumType)).getName();
+  return mlirStringRefCreate(name.data(), name.size());
+}
+
+MlirStringRef cirEnumTypeGetVariantName(MlirType enumType,
+                                        intptr_t index) {
+  auto v = mlir::cast<cir::EnumType>(unwrap(enumType))
+               .getVariants()[index].getValue();
+  return mlirStringRefCreate(v.data(), v.size());
+}
+
+MlirValue cirBuildEnumConstant(MlirBlock block, MlirLocation loc,
+                               MlirType enumType, const char *variant) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::EnumConstantOp>(
+                         unwrap(loc), unwrap(enumType), variant)
+                  .getResult());
+}
+
+MlirValue cirBuildEnumValue(MlirBlock block, MlirLocation loc,
+                            MlirType resultType, MlirValue input) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::EnumValueOp>(
+                         unwrap(loc), unwrap(resultType), unwrap(input))
+                  .getResult());
+}
+
+#endif // COT_HAS_ENUMS
+
+//===----------------------------------------------------------------------===//
+// cot-unions: Types and Ops
+//===----------------------------------------------------------------------===//
+
+#ifdef COT_HAS_UNIONS
+
+MlirType cirTaggedUnionTypeGet(MlirContext ctx, const char *name,
+                               intptr_t numVariants,
+                               const char *const *variantNames,
+                               const MlirType *variantTypes) {
+  auto *context = unwrap(ctx);
+  SmallVector<StringAttr> names;
+  SmallVector<Type> types;
+  for (intptr_t i = 0; i < numVariants; i++) {
+    names.push_back(StringAttr::get(context, variantNames[i]));
+    types.push_back(unwrap(variantTypes[i]));
+  }
+  return wrap(cir::TaggedUnionType::get(context, StringRef(name),
+                                        names, types));
+}
+
+MlirStringRef cirTaggedUnionTypeGetName(MlirType unionType) {
+  auto name = mlir::cast<cir::TaggedUnionType>(unwrap(unionType))
+                  .getName();
+  return mlirStringRefCreate(name.data(), name.size());
+}
+
+intptr_t cirTaggedUnionTypeGetNumVariants(MlirType unionType) {
+  return mlir::cast<cir::TaggedUnionType>(unwrap(unionType))
+      .getVariantNames().size();
+}
+
+MlirStringRef cirTaggedUnionTypeGetVariantName(MlirType unionType,
+                                               intptr_t index) {
+  auto v = mlir::cast<cir::TaggedUnionType>(unwrap(unionType))
+               .getVariantNames()[index].getValue();
+  return mlirStringRefCreate(v.data(), v.size());
+}
+
+MlirType cirTaggedUnionTypeGetVariantType(MlirType unionType,
+                                          intptr_t index) {
+  return wrap(mlir::cast<cir::TaggedUnionType>(unwrap(unionType))
+                  .getVariantTypes()[index]);
+}
+
+MlirValue cirBuildUnionInit(MlirBlock block, MlirLocation loc,
+                            MlirType unionType,
+                            const char *variant, MlirValue payload) {
+  auto builder = getBuilderAtEnd(block);
+  Value payloadVal = payload.ptr ? unwrap(payload) : Value();
+  return wrap(builder.create<cir::UnionInitOp>(
+                         unwrap(loc), unwrap(unionType),
+                         variant, payloadVal)
+                  .getResult());
+}
+
+MlirValue cirBuildUnionTag(MlirBlock block, MlirLocation loc,
+                           MlirValue input) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::UnionTagOp>(
+                         unwrap(loc), builder.getIntegerType(8),
+                         unwrap(input))
+                  .getResult());
+}
+
+MlirValue cirBuildUnionPayload(MlirBlock block, MlirLocation loc,
+                               MlirType resultType,
+                               const char *variant, MlirValue input) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::UnionPayloadOp>(
+                         unwrap(loc), unwrap(resultType),
+                         variant, unwrap(input))
+                  .getResult());
+}
+
+#endif // COT_HAS_UNIONS
+
+//===----------------------------------------------------------------------===//
+// cot-test: Ops
+//===----------------------------------------------------------------------===//
+
+#ifdef COT_HAS_TEST
+
+void cirBuildAssert(MlirBlock block, MlirLocation loc,
+                    MlirValue condition, const char *message) {
+  auto builder = getBuilderAtEnd(block);
+  builder.create<cir::AssertOp>(
+      unwrap(loc), unwrap(condition),
+      builder.getStringAttr(message));
+}
+
+MlirOperation cirBuildTestCase(MlirBlock block, MlirLocation loc,
+                               const char *name) {
+  auto builder = getBuilderAtEnd(block);
+  return wrap(builder.create<cir::TestCaseOp>(unwrap(loc), name)
+                  .getOperation());
+}
+
+#endif // COT_HAS_TEST
+
+//===----------------------------------------------------------------------===//
+// Type inspectors
+//===----------------------------------------------------------------------===//
+
+bool cirTypeIsPtr(MlirType type) {
+#ifdef COT_HAS_MEMORY
+  return mlir::isa<cir::PointerType>(unwrap(type));
+#else
+  return false;
+#endif
+}
+
+bool cirTypeIsRef(MlirType type) {
+#ifdef COT_HAS_MEMORY
+  return mlir::isa<cir::RefType>(unwrap(type));
+#else
+  return false;
+#endif
+}
+
+bool cirTypeIsStruct(MlirType type) {
+#ifdef COT_HAS_STRUCTS
+  return mlir::isa<cir::StructType>(unwrap(type));
+#else
+  return false;
+#endif
+}
+
+bool cirTypeIsArray(MlirType type) {
+#ifdef COT_HAS_ARRAYS
+  return mlir::isa<cir::ArrayType>(unwrap(type));
+#else
+  return false;
+#endif
+}
+
+bool cirTypeIsSlice(MlirType type) {
+#ifdef COT_HAS_SLICES
+  return mlir::isa<cir::SliceType>(unwrap(type));
+#else
+  return false;
+#endif
+}
+
+bool cirTypeIsOptional(MlirType type) {
+#ifdef COT_HAS_OPTIONALS
+  return mlir::isa<cir::OptionalType>(unwrap(type));
+#else
+  return false;
+#endif
+}
+
+bool cirTypeIsErrorUnion(MlirType type) {
+#ifdef COT_HAS_ERRORS
+  return mlir::isa<cir::ErrorUnionType>(unwrap(type));
+#else
+  return false;
+#endif
+}
+
+bool cirTypeIsEnum(MlirType type) {
+#ifdef COT_HAS_ENUMS
+  return mlir::isa<cir::EnumType>(unwrap(type));
+#else
+  return false;
+#endif
+}
+
+bool cirTypeIsTaggedUnion(MlirType type) {
+#ifdef COT_HAS_UNIONS
+  return mlir::isa<cir::TaggedUnionType>(unwrap(type));
+#else
+  return false;
+#endif
+}
+
+//===----------------------------------------------------------------------===//
+// Operation inspection — CIR-specific helpers for transform authors
+//===----------------------------------------------------------------------===//
+
+bool cirOperationIsA(MlirOperation op, const char *opName) {
+  auto name = mlirIdentifierStr(mlirOperationGetName(op));
+  return StringRef(name.data, name.length) == opName;
+}
+
+MlirType cirOperationGetResultType(MlirOperation op) {
+  return mlirValueGetType(mlirOperationGetResult(op, 0));
+}
+
+MlirType cirOperationGetOperandType(MlirOperation op, intptr_t index) {
+  return mlirValueGetType(mlirOperationGetOperand(op, index));
+}
+
+MlirStringRef cirOperationGetStringAttr(MlirOperation op,
+                                        const char *attrName) {
+  MlirAttribute attr = mlirOperationGetAttributeByName(
+      op, mlirStringRefCreateFromCString(attrName));
+  if (mlirAttributeIsNull(attr) || !mlirAttributeIsAString(attr)) {
+    MlirStringRef empty = {nullptr, 0};
+    return empty;
+  }
+  return mlirStringAttrGetValue(attr);
+}
+
+int64_t cirOperationGetIntAttr(MlirOperation op, const char *attrName) {
+  MlirAttribute attr = mlirOperationGetAttributeByName(
+      op, mlirStringRefCreateFromCString(attrName));
+  if (mlirAttributeIsNull(attr) || !mlirAttributeIsAInteger(attr))
+    return 0;
+  return mlirIntegerAttrGetValueSInt(attr);
+}

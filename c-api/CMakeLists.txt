@@ -26,3 +26,35 @@ endif()
 if(COT_HAS_FLOW)
   target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_FLOW)
 endif()
+
+if(COT_HAS_STRUCTS)
+  target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_STRUCTS)
+endif()
+
+if(COT_HAS_ARRAYS)
+  target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_ARRAYS)
+endif()
+
+if(COT_HAS_SLICES)
+  target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_SLICES)
+endif()
+
+if(COT_HAS_OPTIONALS)
+  target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_OPTIONALS)
+endif()
+
+if(COT_HAS_ERRORS)
+  target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_ERRORS)
+endif()
+
+if(COT_HAS_TEST)
+  target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_TEST)
+endif()
+
+if(COT_HAS_ENUMS)
+  target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_ENUMS)
+endif()
+
+if(COT_HAS_UNIONS)
+  target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_UNIONS)
+endif()

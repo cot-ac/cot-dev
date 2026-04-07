@@ -9,6 +9,7 @@
 
 #include "mlir-c/IR.h"
 #include "mlir-c/Pass.h"
+#include "mlir-c/Support.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,6 +73,31 @@ MlirLogicalResult cotPipelineBuilderRunToLLVM(
 MlirLogicalResult cotPipelineBuilderEmitBinary(
     CotPipelineBuilder builder, MlirModule module,
     const char *outputPath);
+
+//===----------------------------------------------------------------------===//
+// Transform authoring — convenience wrappers for external passes
+//===----------------------------------------------------------------------===//
+
+/// Callback signature for cotCreateModulePass / cotCreateFuncPass.
+/// Receives the operation (module or func) and user-provided data.
+typedef void (*CotPassRunFn)(MlirOperation op, void *userData);
+
+/// Create an external pass that operates on the module (builtin.module).
+/// Wraps mlirCreateExternalPass with boilerplate pre-set.
+/// The pass takes ownership — caller must not free userData until pass
+/// is destroyed (use a destructor callback via cotCreateModulePassEx
+/// if cleanup is needed, or pass stack/static data).
+MlirPass cotCreateModulePass(const char *name,
+                              const char *description,
+                              CotPassRunFn run,
+                              void *userData);
+
+/// Create an external pass that operates on each function (func.func).
+/// Same semantics as cotCreateModulePass but runs per-function.
+MlirPass cotCreateFuncPass(const char *name,
+                            const char *description,
+                            CotPassRunFn run,
+                            void *userData);
 
 #ifdef __cplusplus
 }
