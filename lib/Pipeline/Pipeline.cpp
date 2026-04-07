@@ -8,6 +8,7 @@
 #include "cot/Pipeline/Pipeline.h"
 #include "cot/Pipeline/Passes.h"
 #include "cot/Pipeline/Diagnostics.h"
+#include "cot/Construct/Construct.h"
 #include "cot/CIR/CIRDialect.h"
 
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
@@ -63,25 +64,53 @@ LogicalResult PipelineBuilder::runSemaStages(ModuleOp module) {
   if (debugOs)
     pm.addInstrumentation(createPipelineDebugInstrumentation(*debugOs));
 
-  // Phase 1-2: passes not yet implemented are simply not added.
-  // WitnessThunkGenerator, GenericSpecializer, OwnershipEliminator,
-  // ARCOptimizer are added as their construct repos are built.
+  // Construct-provided passes run in two phases:
+  // Phase 1 (pre-sema): GenericSpecializer, WitnessThunkGenerator, etc.
+  // Phase 2 (post-sema): SemanticAnalysis, TestRunnerGenerator, etc.
+  //
+  // We collect them into separate PMs and run sequentially because
+  // some constructs add nested passes (per-function) while others
+  // add module passes, and they must be in the right PM context.
 
-  // External pre-sema passes
-  for (auto &pass : preSemaPasses)
-    pm.addPass(std::move(pass));
+  // Phase 1: Pre-sema construct passes
+  {
+    PassManager preSemaPM(ctx);
+    PassManager postSemaPM(ctx); // collected but run later
+    for (auto &construct : cot::getConstructRegistry())
+      construct->addTransformers(preSemaPM, postSemaPM);
 
-  // SemanticAnalysis will be added by cot-core construct registration.
+    // Run pre-sema passes (GenericSpecializer, etc.)
+    if (preSemaPM.size() > 0)
+      if (failed(preSemaPM.run(module)))
+        return failure();
+
+    // External pre-sema passes
+    for (auto &pass : preSemaPasses)
+      pm.addPass(std::move(pass));
+
+    // Phase 2: Post-sema construct passes (Sema, test runner, etc.)
+    if (postSemaPM.size() > 0) {
+      // Run external pre-sema first
+      if (pm.size() > 0)
+        if (failed(pm.run(module)))
+          return failure();
+      // Then run post-sema construct passes
+      if (failed(postSemaPM.run(module)))
+        return failure();
+    }
+  }
 
   // External post-sema passes
-  for (auto &pass : postSemaPasses)
-    pm.addPass(std::move(pass));
+  {
+    PassManager postPM(ctx);
+    for (auto &pass : postSemaPasses)
+      postPM.addPass(std::move(pass));
+    if (postPM.size() > 0)
+      if (failed(postPM.run(module)))
+        return failure();
+  }
 
-  // Skip running an empty pipeline
-  if (pm.size() == 0)
-    return success();
-
-  return pm.run(module);
+  return success();
 }
 
 //===----------------------------------------------------------------------===//
