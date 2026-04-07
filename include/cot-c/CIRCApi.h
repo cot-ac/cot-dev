@@ -44,6 +44,67 @@ void cirRegisterConstructs(MlirContext ctx);
 void cirForceConstructLink(void);
 
 //===----------------------------------------------------------------------===//
+// Block helpers
+//===----------------------------------------------------------------------===//
+
+/// Get the block argument at the given index as a Value.
+MlirValue cirBlockGetArgument(MlirBlock block, intptr_t index);
+
+//===----------------------------------------------------------------------===//
+// Function building (func dialect)
+//===----------------------------------------------------------------------===//
+
+/// Create a FunctionType: (paramTypes...) -> (resultTypes...).
+MlirType cirFunctionTypeGet(MlirContext ctx,
+                            intptr_t numParams,
+                            const MlirType *paramTypes,
+                            intptr_t numResults,
+                            const MlirType *resultTypes);
+
+/// Get the number of input parameters in a FunctionType.
+intptr_t cirFunctionTypeGetNumInputs(MlirType funcType);
+
+/// Get the number of results in a FunctionType.
+intptr_t cirFunctionTypeGetNumResults(MlirType funcType);
+
+/// Get the parameter type at the given index.
+MlirType cirFunctionTypeGetInput(MlirType funcType, intptr_t index);
+
+/// Get the result type at the given index.
+MlirType cirFunctionTypeGetResult(MlirType funcType, intptr_t index);
+
+/// Create a func.func operation with a body region containing entryBlock.
+/// The entry block defines the function's parameter types via its arguments.
+/// Returns the created func.func operation.
+MlirOperation cirFuncCreate(MlirBlock moduleBody, MlirLocation loc,
+                             const char *name, MlirType funcType,
+                             MlirBlock entryBlock);
+
+/// Get the body region of a func.func operation.
+/// Use to append additional blocks to the function.
+MlirRegion cirFuncGetBodyRegion(MlirOperation funcOp);
+
+/// Build a func.call operation.
+/// Returns the first result value, or a null MlirValue for void calls.
+MlirValue cirFuncCall(MlirBlock block, MlirLocation loc,
+                      const char *callee,
+                      intptr_t numArgs, const MlirValue *args,
+                      intptr_t numResults, const MlirType *resultTypes);
+
+/// Build a func.return operation (0 or more return values).
+void cirFuncReturn(MlirBlock block, MlirLocation loc,
+                   intptr_t numValues, const MlirValue *values);
+
+/// Look up the return type of a named function in the module.
+/// Returns a null MlirType if the function is not found or returns void.
+MlirType cirFuncLookupReturnType(MlirOperation moduleOp,
+                                 const char *funcName);
+
+/// Check if a named function returns void (0 results).
+/// Returns true if the function returns void or is not found.
+bool cirFuncIsVoidReturn(MlirOperation moduleOp, const char *funcName);
+
+//===----------------------------------------------------------------------===//
 // cot-core: Constants
 //===----------------------------------------------------------------------===//
 
@@ -152,6 +213,18 @@ void cirBuildBr(MlirBlock block, MlirLocation loc, MlirBlock dest);
 void cirBuildCondBr(MlirBlock block, MlirLocation loc,
                     MlirValue condition,
                     MlirBlock trueDest, MlirBlock falseDest);
+
+/// Build cir.switch — multi-way branch on integer value.
+/// Branches to the case destination matching `value`, or to `defaultDest`
+/// if no case matches. caseValues and caseDests arrays must have
+/// numCases elements.
+void cirBuildSwitch(MlirBlock block, MlirLocation loc,
+                    MlirValue value,
+                    MlirBlock defaultDest,
+                    intptr_t numCases,
+                    const int64_t *caseValues,
+                    const MlirBlock *caseDests);
+
 void cirBuildTrap(MlirBlock block, MlirLocation loc);
 
 //===----------------------------------------------------------------------===//

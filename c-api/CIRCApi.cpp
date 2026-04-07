@@ -52,6 +52,8 @@
 
 #include "mlir/CAPI/IR.h"
 #include "mlir/IR/Builders.h"
+#include "mlir/IR/SymbolTable.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir-c/BuiltinAttributes.h"
 
 using namespace mlir;
@@ -60,6 +62,116 @@ using namespace mlir;
 static OpBuilder getBuilderAtEnd(MlirBlock block) {
   Block *b = unwrap(block);
   return OpBuilder::atBlockEnd(b);
+}
+
+//===----------------------------------------------------------------------===//
+// Block helpers
+//===----------------------------------------------------------------------===//
+
+MlirValue cirBlockGetArgument(MlirBlock block, intptr_t index) {
+  return wrap(unwrap(block)->getArgument(index));
+}
+
+//===----------------------------------------------------------------------===//
+// Function building (func dialect)
+//===----------------------------------------------------------------------===//
+
+MlirType cirFunctionTypeGet(MlirContext ctx,
+                            intptr_t numParams,
+                            const MlirType *paramTypes,
+                            intptr_t numResults,
+                            const MlirType *resultTypes) {
+  SmallVector<Type> params, results;
+  for (intptr_t i = 0; i < numParams; ++i)
+    params.push_back(unwrap(paramTypes[i]));
+  for (intptr_t i = 0; i < numResults; ++i)
+    results.push_back(unwrap(resultTypes[i]));
+  return wrap(FunctionType::get(unwrap(ctx), params, results));
+}
+
+intptr_t cirFunctionTypeGetNumInputs(MlirType funcType) {
+  return mlir::cast<FunctionType>(unwrap(funcType)).getNumInputs();
+}
+
+intptr_t cirFunctionTypeGetNumResults(MlirType funcType) {
+  return mlir::cast<FunctionType>(unwrap(funcType)).getNumResults();
+}
+
+MlirType cirFunctionTypeGetInput(MlirType funcType, intptr_t index) {
+  return wrap(mlir::cast<FunctionType>(unwrap(funcType)).getInput(index));
+}
+
+MlirType cirFunctionTypeGetResult(MlirType funcType, intptr_t index) {
+  return wrap(mlir::cast<FunctionType>(unwrap(funcType)).getResult(index));
+}
+
+MlirOperation cirFuncCreate(MlirBlock moduleBody, MlirLocation loc,
+                             const char *name, MlirType funcType,
+                             MlirBlock entryBlock) {
+  auto builder = getBuilderAtEnd(moduleBody);
+  auto location = unwrap(loc);
+  auto fty = mlir::cast<FunctionType>(unwrap(funcType));
+
+  // Create the function op
+  auto funcOp = builder.create<func::FuncOp>(location, name, fty);
+
+  // Move entry block into the function's body region
+  funcOp.getBody().push_back(unwrap(entryBlock));
+
+  return wrap(funcOp.getOperation());
+}
+
+MlirRegion cirFuncGetBodyRegion(MlirOperation funcOp) {
+  auto fn = mlir::cast<func::FuncOp>(unwrap(funcOp));
+  return wrap(&fn.getBody());
+}
+
+MlirValue cirFuncCall(MlirBlock block, MlirLocation loc,
+                      const char *callee,
+                      intptr_t numArgs, const MlirValue *args,
+                      intptr_t numResults, const MlirType *resultTypes) {
+  auto builder = getBuilderAtEnd(block);
+  auto location = unwrap(loc);
+
+  SmallVector<Value> argVals;
+  for (intptr_t i = 0; i < numArgs; ++i)
+    argVals.push_back(unwrap(args[i]));
+
+  SmallVector<Type> resTys;
+  for (intptr_t i = 0; i < numResults; ++i)
+    resTys.push_back(unwrap(resultTypes[i]));
+
+  auto callOp = builder.create<func::CallOp>(location, callee, resTys,
+                                              argVals);
+  if (numResults > 0)
+    return wrap(callOp.getResult(0));
+  return {nullptr};
+}
+
+void cirFuncReturn(MlirBlock block, MlirLocation loc,
+                   intptr_t numValues, const MlirValue *values) {
+  auto builder = getBuilderAtEnd(block);
+  SmallVector<Value> vals;
+  for (intptr_t i = 0; i < numValues; ++i)
+    vals.push_back(unwrap(values[i]));
+  builder.create<func::ReturnOp>(unwrap(loc), vals);
+}
+
+MlirType cirFuncLookupReturnType(MlirOperation moduleOp,
+                                 const char *funcName) {
+  auto mod = unwrap(moduleOp);
+  SymbolTable symTable(mod);
+  auto funcOp = symTable.lookup<func::FuncOp>(funcName);
+  if (!funcOp || funcOp.getNumResults() == 0)
+    return {nullptr};
+  return wrap(funcOp.getResultTypes()[0]);
+}
+
+bool cirFuncIsVoidReturn(MlirOperation moduleOp, const char *funcName) {
+  auto mod = unwrap(moduleOp);
+  SymbolTable symTable(mod);
+  auto funcOp = symTable.lookup<func::FuncOp>(funcName);
+  return !funcOp || funcOp.getNumResults() == 0;
 }
 
 //===----------------------------------------------------------------------===//
@@ -497,6 +609,22 @@ void cirBuildCondBr(MlirBlock block, MlirLocation loc,
   builder.create<cir::CondBrOp>(unwrap(loc), unwrap(condition),
                                  ValueRange{}, ValueRange{},
                                  unwrap(trueDest), unwrap(falseDest));
+}
+
+void cirBuildSwitch(MlirBlock block, MlirLocation loc,
+                    MlirValue value,
+                    MlirBlock defaultDest,
+                    intptr_t numCases,
+                    const int64_t *caseValues,
+                    const MlirBlock *caseDests) {
+  auto builder = getBuilderAtEnd(block);
+  SmallVector<Block *> destBlocks;
+  for (intptr_t i = 0; i < numCases; ++i)
+    destBlocks.push_back(unwrap(caseDests[i]));
+  auto caseAttr = builder.getDenseI64ArrayAttr(
+      ArrayRef<int64_t>(caseValues, numCases));
+  builder.create<cir::SwitchOp>(unwrap(loc), unwrap(value), caseAttr,
+                                 unwrap(defaultDest), destBlocks);
 }
 
 void cirBuildTrap(MlirBlock block, MlirLocation loc) {
