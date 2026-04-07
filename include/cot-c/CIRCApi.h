@@ -37,6 +37,12 @@ MlirLocation cirLocationFileLineCol(MlirContext ctx,
 /// Call after cirRegisterDialect and before building any CIR ops.
 void cirRegisterConstructs(MlirContext ctx);
 
+/// Ensure construct libraries are not dead-stripped by the linker.
+/// Call once from your program's main before cirRegisterConstructs.
+/// This is needed when linking construct .a files without -force_load
+/// (e.g., from Zig, Go, or other non-CMake build systems).
+void cirForceConstructLink(void);
+
 //===----------------------------------------------------------------------===//
 // cot-core: Constants
 //===----------------------------------------------------------------------===//

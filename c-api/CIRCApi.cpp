@@ -83,6 +83,84 @@ void cirRegisterConstructs(MlirContext ctx) {
     construct->registerOpsAndTypes(*context);
 }
 
+// C-linkage anchor functions emitted by COT_REGISTER_CONSTRUCT.
+// Each construct's registration .cpp gets one of these. Referencing
+// them here forces the linker to pull in the .o file that contains
+// the static constructor — needed when not using -force_load.
+extern "C" {
+#ifdef COT_HAS_CORE
+void _cot_anchor_CoreConstruct(void);
+#endif
+#ifdef COT_HAS_MEMORY
+void _cot_anchor_MemoryConstruct(void);
+#endif
+#ifdef COT_HAS_FLOW
+void _cot_anchor_FlowConstruct(void);
+#endif
+#ifdef COT_HAS_STRUCTS
+void _cot_anchor_StructsConstruct(void);
+#endif
+#ifdef COT_HAS_ARRAYS
+void _cot_anchor_ArraysConstruct(void);
+#endif
+#ifdef COT_HAS_SLICES
+void _cot_anchor_SlicesConstruct(void);
+#endif
+#ifdef COT_HAS_OPTIONALS
+void _cot_anchor_OptionalsConstruct(void);
+#endif
+#ifdef COT_HAS_ERRORS
+void _cot_anchor_ErrorsConstruct(void);
+#endif
+#ifdef COT_HAS_TEST
+void _cot_anchor_TestConstruct(void);
+#endif
+#ifdef COT_HAS_ENUMS
+void _cot_anchor_EnumsConstruct(void);
+#endif
+#ifdef COT_HAS_UNIONS
+void _cot_anchor_UnionsConstruct(void);
+#endif
+} // extern "C"
+
+void cirForceConstructLink() {
+  // Call each anchor — the calls are trivial (empty functions) but
+  // they force the linker to keep the translation units alive.
+#ifdef COT_HAS_CORE
+  _cot_anchor_CoreConstruct();
+#endif
+#ifdef COT_HAS_MEMORY
+  _cot_anchor_MemoryConstruct();
+#endif
+#ifdef COT_HAS_FLOW
+  _cot_anchor_FlowConstruct();
+#endif
+#ifdef COT_HAS_STRUCTS
+  _cot_anchor_StructsConstruct();
+#endif
+#ifdef COT_HAS_ARRAYS
+  _cot_anchor_ArraysConstruct();
+#endif
+#ifdef COT_HAS_SLICES
+  _cot_anchor_SlicesConstruct();
+#endif
+#ifdef COT_HAS_OPTIONALS
+  _cot_anchor_OptionalsConstruct();
+#endif
+#ifdef COT_HAS_ERRORS
+  _cot_anchor_ErrorsConstruct();
+#endif
+#ifdef COT_HAS_TEST
+  _cot_anchor_TestConstruct();
+#endif
+#ifdef COT_HAS_ENUMS
+  _cot_anchor_EnumsConstruct();
+#endif
+#ifdef COT_HAS_UNIONS
+  _cot_anchor_UnionsConstruct();
+#endif
+}
+
 //===----------------------------------------------------------------------===//
 // cot-core: Constants
 //===----------------------------------------------------------------------===//

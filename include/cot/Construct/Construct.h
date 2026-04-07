@@ -96,11 +96,13 @@ struct ConstructRegistration {
 ///
 ///   COT_REGISTER_CONSTRUCT(CoreConstruct)
 ///
-/// This creates a global constructor that registers the construct.
-/// For static linking: the construct is registered at program startup.
-/// For dynamic loading (dlopen): registered when the plugin loads.
+/// This creates a global constructor that registers the construct,
+/// plus a C-linkage anchor function (_cot_anchor_<Name>) that can be
+/// referenced from non-C++ build systems (Zig, Go, Swift) to prevent
+/// the linker from dead-stripping this translation unit.
 #define COT_REGISTER_CONSTRUCT(ConstructClass) \
   static ConstructRegistration<ConstructClass> \
-      _cot_construct_##ConstructClass##_registration;
+      _cot_construct_##ConstructClass##_registration; \
+  extern "C" void _cot_anchor_##ConstructClass() {}
 
 #endif // COT_CONSTRUCT_CONSTRUCT_H
