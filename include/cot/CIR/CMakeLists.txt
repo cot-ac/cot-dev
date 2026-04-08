@@ -17,3 +17,8 @@ set(LLVM_TARGET_DEFINITIONS CIRInterfaces.td)
 mlir_tablegen(CIRInterfaces.h.inc -gen-type-interface-decls)
 mlir_tablegen(CIRInterfaces.cpp.inc -gen-type-interface-defs)
 add_public_tablegen_target(CIRInterfacesIncGen)
+
+set(LLVM_TARGET_DEFINITIONS CIROpInterfaces.td)
+mlir_tablegen(CIROpInterfaces.h.inc -gen-op-interface-decls)
+mlir_tablegen(CIROpInterfaces.cpp.inc -gen-op-interface-defs)
+add_public_tablegen_target(CIROpInterfacesIncGen)
