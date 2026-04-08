@@ -8,13 +8,18 @@
 //!
 //! ## Modules
 //!
+//! - `sema` — CIRSema single-walk semantic analysis pass + SemaStep trait
 //! - `cir_api` — 145 `#[no_mangle] extern "C"` functions for IR building
 //! - `cot_api` — 14 `#[no_mangle] extern "C"` functions for pipeline/codegen
 //! - `handle` — Opaque pointer management (Box → raw ptr → Box)
 
+pub mod sema;
 pub mod cir_api;
 pub mod cot_api;
 pub mod handle;
+
+// Re-export key types for construct crates.
+pub use sema::{CIRSema, SemaState, SemaStep, StepPosition};
 
 // Reference all construct crates so they're linked into the static library.
 extern crate cot_arith;
