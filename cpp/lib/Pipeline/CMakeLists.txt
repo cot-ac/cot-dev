@@ -1,5 +1,6 @@
 add_mlir_library(COTPipeline
   Pipeline.cpp
+  CIRSema.cpp
   CIRToLLVM.cpp
   Diagnostics.cpp
 

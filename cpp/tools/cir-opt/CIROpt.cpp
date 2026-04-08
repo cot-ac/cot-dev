@@ -7,6 +7,7 @@
 #include "cot/CIR/CIRDialect.h"
 #include "cot/Construct/Construct.h"
 #include "cot/Pipeline/Passes.h"
+#include "cot/Pipeline/CIRSema.h"
 
 #ifdef COT_HAS_GENERICS
 #include "generics/GenericSpecializer.h"
@@ -31,6 +32,9 @@ int main(int argc, char **argv) {
   // Register passes
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
     return cot::createCIRToLLVMPass();
+  });
+  mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    return cot::createCIRSemaPass();
   });
 #ifdef COT_HAS_GENERICS
   mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {

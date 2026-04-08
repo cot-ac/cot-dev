@@ -8,6 +8,8 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/DialectConversion.h"
 
+namespace cot { class CIRSema; }
+
 namespace cot {
 
 /// Base class for all COT constructs. Each construct repo implements this.
@@ -39,13 +41,17 @@ public:
   /// Called once at framework initialization, after static registration.
   virtual void registerDynamicOps(mlir::ExtensibleDialect &dialect) {}
 
-  /// Add this construct's CIR->CIR transformer passes to the pipeline.
+  /// Register steps for the CIRSema single-walk pass.
+  /// Steps run in fixed position order: Comptime → Generics → Types → Ownership.
+  /// Use this for per-op sequential transforms.
+  /// Use addTransformers() for separate passes needing iterative analysis.
+  virtual void registerSemaSteps(CIRSema &sema) {}
+
+  /// Add this construct's separate CIR->CIR transformer passes.
   /// Called by PipelineBuilder during pipeline composition.
-  ///
-  /// The PassManager already has the correct nesting (module -> func).
-  /// Add passes at the appropriate extension point:
-  ///   preSemaPM  — before type checking (e.g., witness thunk generation)
-  ///   postSemaPM — after type checking (e.g., ARC optimization)
+  /// Use for post-sema passes that need whole-function iterative analysis
+  /// (ARC optimization, devirtualization, concurrency lowering).
+  /// For per-op sequential transforms, use registerSemaSteps() instead.
   virtual void addTransformers(mlir::PassManager &preSemaPM,
                                mlir::PassManager &postSemaPM) {}
 
