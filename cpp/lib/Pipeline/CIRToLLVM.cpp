@@ -42,6 +42,32 @@ struct CIRToLLVMPass
     ModuleOp module = getOperation();
     MLIRContext *ctx = &getContext();
 
+    // Erase generic template functions before lowering.
+    // Functions with !cir.type_param in their signature are unspecialized
+    // templates that should not be lowered to machine code.
+    // Reference: Rust — generic MIR never collected for codegen;
+    // Swift — generic functions kept but only specializations are used.
+    {
+      SmallVector<func::FuncOp> templatesToErase;
+      module.walk([&](func::FuncOp fn) {
+        auto fty = fn.getFunctionType();
+        auto isTypeParam = [](Type t) {
+          // Check for cir.type_param by examining the type's string name.
+          // Avoids header dependency on generics/Types.h.
+          std::string typeName;
+          llvm::raw_string_ostream os(typeName);
+          t.print(os);
+          return typeName.find("type_param") != std::string::npos;
+        };
+        for (auto input : fty.getInputs())
+          if (isTypeParam(input)) { templatesToErase.push_back(fn); return; }
+        for (auto result : fty.getResults())
+          if (isTypeParam(result)) { templatesToErase.push_back(fn); return; }
+      });
+      for (auto fn : templatesToErase)
+        fn.erase();
+    }
+
     // Create TypeConverter with construct-provided type conversions
     LLVMTypeConverter typeConverter(ctx);
 
