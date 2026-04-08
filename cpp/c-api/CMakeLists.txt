@@ -70,3 +70,7 @@ endif()
 if(COT_HAS_VWT)
   target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_VWT)
 endif()
+
+if(COT_HAS_COMPTIME)
+  target_compile_definitions(obj.COTCApi PRIVATE COT_HAS_COMPTIME)
+endif()

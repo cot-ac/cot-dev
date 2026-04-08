@@ -253,6 +253,9 @@ void _cot_anchor_TraitsConstruct(void);
 #ifdef COT_HAS_VWT
 void _cot_anchor_VWTConstruct(void);
 #endif
+#ifdef COT_HAS_COMPTIME
+void _cot_anchor_ComptimeConstruct(void);
+#endif
 } // extern "C"
 
 void cirForceConstructLink() {
@@ -299,6 +302,9 @@ void cirForceConstructLink() {
 #endif
 #ifdef COT_HAS_VWT
   _cot_anchor_VWTConstruct();
+#endif
+#ifdef COT_HAS_COMPTIME
+  _cot_anchor_ComptimeConstruct();
 #endif
 }
 

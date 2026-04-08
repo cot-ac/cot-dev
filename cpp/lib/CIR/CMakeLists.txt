@@ -6,6 +6,7 @@ add_mlir_library(CIR
   CIROpsIncGen
   CIRTypesIncGen
   CIRInterfacesIncGen
+  CIROpInterfacesIncGen
 
   LINK_LIBS PUBLIC
   MLIRIR

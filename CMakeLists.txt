@@ -44,6 +44,7 @@ set(CORE_CONSTRUCTS
   "generics:CotGenerics:GENERICS"
   "traits:CotTraits:TRAITS"
   "vwt:CotVWT:VWT"
+  "comptime:CotComptime:COMPTIME"
 )
 
 foreach(entry ${CORE_CONSTRUCTS})

@@ -1,6 +1,7 @@
 //===- CIRDialect.cpp - CIR dialect implementation ----------*- C++ -*-===//
 #include "cot/CIR/CIRDialect.h"
 #include "cot/CIR/CIRInterfaces.h"
+#include "cot/CIR/CIROpInterfaces.h"
 #include "cot/CIR/CIROps.h"
 #include "cot/CIR/CIRTypes.h"
 #include "cot/Construct/Construct.h"
@@ -25,6 +26,9 @@ using namespace cir;
 
 // TypeInterface implementations
 #include "cot/CIR/CIRInterfaces.cpp.inc"
+
+// OpInterface implementations
+#include "cot/CIR/CIROpInterfaces.cpp.inc"
 
 void CIRDialect::initialize() {
   // No statically-defined ops or types in the framework.

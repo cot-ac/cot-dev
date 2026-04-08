@@ -108,6 +108,8 @@ if(COT_HAS_VWT)
     MLIRSideEffectInterfaces)
 endif()
 
+link_core_construct(comptime CotComptime COMPTIME)
+
 link_core_construct(test CotTest TEST)
 if(COT_HAS_TEST)
   target_link_libraries(cir-opt PRIVATE
