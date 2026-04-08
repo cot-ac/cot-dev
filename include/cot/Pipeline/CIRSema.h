@@ -54,6 +54,11 @@ public:
   /// Populated by the comptime step; read by generics and types steps.
   llvm::DenseMap<mlir::Value, mlir::Attribute> comptimeValues;
 
+  /// Simulated comptime memory: alloca pointer Value → stored Attribute.
+  /// When an alloca is comptime-tracked, stores write here and loads read.
+  /// Reference: Zig Sema ComptimeAlloc.
+  llvm::DenseMap<mlir::Value, mlir::Attribute> comptimeAllocs;
+
   /// Memoized comptime function calls: mangled key → result attribute.
   /// Key is "func_name:arg0:arg1:..." for deduplication.
   /// Prevents re-evaluation of the same comptime call.
