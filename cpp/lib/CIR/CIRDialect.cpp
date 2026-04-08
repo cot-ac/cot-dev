@@ -84,12 +84,17 @@ void CIRDialect::printType(Type type,
 }
 
 // Constant materializer (errata E1).
-// In Phase 1, no ConstantOp exists yet (it's defined in cot-core).
-// Return nullptr — constant folding across blocks won't work until
-// cot-core is linked, which provides ConstantOp.
+// Creates cir.constant without importing arith/Ops.h — uses op name
+// string directly. This avoids a circular dependency (cot-dev → core/arith).
+// Reference: Lattner principle — dialect must implement materializeConstant
+// for constant folding across blocks to work.
 Operation *CIRDialect::materializeConstant(
     OpBuilder &builder, Attribute value, Type type, Location loc) {
-  return nullptr;
+  // Build cir.constant via OperationState (no header dependency on arith)
+  OperationState state(loc, "cir.constant");
+  state.addAttribute("value", value);
+  state.addTypes(type);
+  return builder.create(state);
 }
 
 void CIRDialect::registerConstructOp(
