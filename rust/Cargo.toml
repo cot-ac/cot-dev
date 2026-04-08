@@ -1,0 +1,25 @@
+[package]
+name = "cot-dev"
+version = "0.1.0"
+edition = "2021"
+description = "COT framework — C API + pipeline backed by Rust/MLIF/Cranelift"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+mlif = { workspace = true }
+cot-arith = { path = "../../core/arith/rust" }
+cot-memory = { path = "../../core/memory/rust" }
+cot-flow = { path = "../../core/flow/rust" }
+cot-structs = { path = "../../core/structs/rust" }
+cot-arrays = { path = "../../core/arrays/rust" }
+cot-slices = { path = "../../core/slices/rust" }
+cot-optionals = { path = "../../core/optionals/rust" }
+cot-errors = { path = "../../core/errors/rust" }
+cot-enums = { path = "../../core/enums/rust" }
+cot-unions = { path = "../../core/unions/rust" }
+cot-generics = { path = "../../core/generics/rust" }
+cot-traits = { path = "../../core/traits/rust" }
+cot-vwt = { path = "../../core/vwt/rust" }
+cot-test = { path = "../../core/test/rust" }
