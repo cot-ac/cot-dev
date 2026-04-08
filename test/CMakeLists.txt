@@ -21,10 +21,10 @@ if(COT_HAS_CORE)
 
   if(APPLE)
     target_link_options(e2e_phase2_test PRIVATE
-      "-Wl,-force_load,${CORE_BUILD_DIR}/arith/lib/libCotArith.a")
+      "-Wl,-force_load,${CORE_BUILD_DIR}/arith/cpp/libCotArith.a")
   else()
     target_link_options(e2e_phase2_test PRIVATE
-      "-Wl,--whole-archive" "${CORE_BUILD_DIR}/arith/lib/libCotArith.a"
+      "-Wl,--whole-archive" "${CORE_BUILD_DIR}/arith/cpp/libCotArith.a"
       "-Wl,--no-whole-archive")
   endif()
 
@@ -48,10 +48,10 @@ if(COT_HAS_CORE)
     target_compile_definitions(e2e_phase2_test PRIVATE COT_HAS_MEMORY)
     if(APPLE)
       target_link_options(e2e_phase2_test PRIVATE
-        "-Wl,-force_load,${CORE_BUILD_DIR}/memory/lib/libCotMemory.a")
+        "-Wl,-force_load,${CORE_BUILD_DIR}/memory/cpp/libCotMemory.a")
     else()
       target_link_options(e2e_phase2_test PRIVATE
-        "-Wl,--whole-archive" "${CORE_BUILD_DIR}/memory/lib/libCotMemory.a"
+        "-Wl,--whole-archive" "${CORE_BUILD_DIR}/memory/cpp/libCotMemory.a"
         "-Wl,--no-whole-archive")
     endif()
   endif()
@@ -61,14 +61,14 @@ if(COT_HAS_CORE)
 
   # Helper macro for force-loading a construct .a
   macro(link_core_construct_test target construct_name lib_name)
-    if(EXISTS "${CORE_BUILD_DIR}/${construct_name}/lib/lib${lib_name}.a")
+    if(EXISTS "${CORE_BUILD_DIR}/${construct_name}/cpp/lib${lib_name}.a")
       if(APPLE)
         target_link_options(${target} PRIVATE
-          "-Wl,-force_load,${CORE_BUILD_DIR}/${construct_name}/lib/lib${lib_name}.a")
+          "-Wl,-force_load,${CORE_BUILD_DIR}/${construct_name}/cpp/lib${lib_name}.a")
       else()
         target_link_options(${target} PRIVATE
           "-Wl,--whole-archive"
-          "${CORE_BUILD_DIR}/${construct_name}/lib/lib${lib_name}.a"
+          "${CORE_BUILD_DIR}/${construct_name}/cpp/lib${lib_name}.a"
           "-Wl,--no-whole-archive")
       endif()
     endif()

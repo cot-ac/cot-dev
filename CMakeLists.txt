@@ -52,7 +52,7 @@ foreach(entry ${CORE_CONSTRUCTS})
   list(GET parts 1 lib_name)
   list(GET parts 2 var_name)
 
-  set(lib_path "${CORE_BUILD_DIR}/${dir_name}/lib/lib${lib_name}.a")
+  set(lib_path "${CORE_BUILD_DIR}/${dir_name}/cpp/lib${lib_name}.a")
   if(EXISTS "${lib_path}")
     add_library(${lib_name} STATIC IMPORTED GLOBAL)
     set_target_properties(${lib_name} PROPERTIES IMPORTED_LOCATION "${lib_path}")

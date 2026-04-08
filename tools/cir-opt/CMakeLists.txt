@@ -21,7 +21,7 @@ target_link_libraries(cir-opt PRIVATE
 # Helper macro: force-load a construct library from core/
 macro(link_core_construct dir_name lib_name var_name)
   if(COT_HAS_${var_name})
-    set(_lib "${CORE_BUILD_DIR}/${dir_name}/lib/lib${lib_name}.a")
+    set(_lib "${CORE_BUILD_DIR}/${dir_name}/cpp/lib${lib_name}.a")
     if(APPLE)
       target_link_options(cir-opt PRIVATE "-Wl,-force_load,${_lib}")
     else()
