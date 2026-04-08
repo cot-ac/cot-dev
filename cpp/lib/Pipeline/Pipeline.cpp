@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 #include "cot/Pipeline/Pipeline.h"
 #include "cot/Pipeline/Passes.h"
+#include "cot/Pipeline/CIRSema.h"
 #include "cot/Pipeline/Diagnostics.h"
 #include "cot/Construct/Construct.h"
 #include "cot/CIR/CIRDialect.h"
@@ -60,55 +61,42 @@ LogicalResult PipelineBuilder::runSemaStages(ModuleOp module) {
   PassManager pm(ctx);
   pm.enableVerifier(true);
 
-  // Pipeline debugger: dump IR before/after each pass
   if (debugOs)
     pm.addInstrumentation(createPipelineDebugInstrumentation(*debugOs));
 
-  // Construct-provided passes run in two phases:
-  // Phase 1 (pre-sema): GenericSpecializer, WitnessThunkGenerator, etc.
-  // Phase 2 (post-sema): SemanticAnalysis, TestRunnerGenerator, etc.
-  //
-  // We collect them into separate PMs and run sequentially because
-  // some constructs add nested passes (per-function) while others
-  // add module passes, and they must be in the right PM context.
+  // CIRSema: single-walk semantic analysis.
+  // Constructs register steps via registerSemaSteps().
+  // Steps run in fixed order: Comptime → Generics → Types → Ownership.
+  pm.addPass(createCIRSemaPass());
 
-  // Phase 1: Pre-sema construct passes
+  // External pre-sema passes (from frontends)
+  for (auto &pass : preSemaPasses)
+    pm.addPass(std::move(pass));
+
+  // Post-sema construct passes (separate passes for iterative analysis).
+  // Constructs register these via addTransformers().
+  // e.g., TestRunnerGenerator, ARCOptimizer, Devirtualizer.
+  // We run the post-sema PM separately after the main PM completes.
+  PassManager postSemaPM(ctx);
   {
-    PassManager preSemaPM(ctx);
-    PassManager postSemaPM(ctx); // collected but run later
+    PassManager dummyPre(ctx);
     for (auto &construct : cot::getConstructRegistry())
-      construct->addTransformers(preSemaPM, postSemaPM);
-
-    // Run pre-sema passes (GenericSpecializer, etc.)
-    if (preSemaPM.size() > 0)
-      if (failed(preSemaPM.run(module)))
-        return failure();
-
-    // External pre-sema passes
-    for (auto &pass : preSemaPasses)
-      pm.addPass(std::move(pass));
-
-    // Phase 2: Post-sema construct passes (Sema, test runner, etc.)
-    if (postSemaPM.size() > 0) {
-      // Run external pre-sema first
-      if (pm.size() > 0)
-        if (failed(pm.run(module)))
-          return failure();
-      // Then run post-sema construct passes
-      if (failed(postSemaPM.run(module)))
-        return failure();
-    }
+      construct->addTransformers(dummyPre, postSemaPM);
   }
 
-  // External post-sema passes
-  {
-    PassManager postPM(ctx);
-    for (auto &pass : postSemaPasses)
-      postPM.addPass(std::move(pass));
-    if (postPM.size() > 0)
-      if (failed(postPM.run(module)))
-        return failure();
-  }
+  // External post-sema passes (from frontends)
+  for (auto &pass : postSemaPasses)
+    postSemaPM.addPass(std::move(pass));
+
+  // Run main pipeline (CIRSema + pre-sema)
+  if (pm.size() > 0)
+    if (failed(pm.run(module)))
+      return failure();
+
+  // Run post-sema passes (TestRunnerGenerator, ARCOptimizer, etc.)
+  if (postSemaPM.size() > 0)
+    if (failed(postSemaPM.run(module)))
+      return failure();
 
   return success();
 }
